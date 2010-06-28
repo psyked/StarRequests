@@ -1,24 +1,24 @@
 package couk.markstar.starrequests.utils
 {
 	import couk.markstar.starrequests.requests.IRequest;
-	
+
 	import flash.utils.setTimeout;
-	
+
 	import org.osflash.signals.ISignal;
-	
+
 	public final class RequestQueueAsyncUtil
 	{
 		protected var _numRequestsPerCycle:uint;
 		protected var _requestsExecutedThisCyle:uint;
-		
+
 		protected var _cycleDelay:uint;
-		
+
 		protected var _isExecuting:Boolean;
 		protected var _requests:Vector.<IRequest>;
 		protected var _currentRequest:IRequest;
-		
+
 		protected var _autoStart:Boolean = true;
-		
+
 		public function RequestQueueAsyncUtil( numRequestsPerCycle:uint, cycleDelay:uint = 100 )
 		{
 			_numRequestsPerCycle = numRequestsPerCycle;
@@ -27,38 +27,46 @@ package couk.markstar.starrequests.utils
 			_isExecuting = false;
 			_requests = new Vector.<IRequest>();
 		}
-		
+
 		public function get autoStart():Boolean
 		{
 			return _autoStart;
 		}
-		
+
 		public function set autoStart( value:Boolean ):void
 		{
 			_autoStart = value;
-			
+
 			if ( !_isExecuting && _requests.length )
 			{
 				sendNextRequest();
 			}
 		}
-		
+
+		public function start():void
+		{
+			if ( !_isExecuting && _requests.length )
+			{
+				sendNextRequest();
+			}
+		}
+
 		public function addRequest( request:IRequest ):void
 		{
 			addListeners( request.completedSignal );
 			addListeners( request.failedSignal );
 			_requests[ _requests.length ] = request;
-			
+
 			if ( autoStart )
 			{
 				sendNextRequest();
 			}
 		}
-		
+
 		public function clear():void
 		{
 			var request:IRequest;
-			
+
 			while ( _requests.length )
 			{
 				request = _requests.shift();
@@ -67,14 +75,14 @@ package couk.markstar.starrequests.utils
 			}
 			request = null;
 		}
-		
+
 		protected function sendNextRequest():void
 		{
 			if ( !_isExecuting && _requests.length )
 			{
 				_isExecuting = true;
 				_currentRequest = _requests.shift();
-				
+
 				if ( _requestsExecutedThisCyle == _numRequestsPerCycle )
 				{
 					_requestsExecutedThisCyle = 0;
@@ -86,13 +94,13 @@ package couk.markstar.starrequests.utils
 				}
 			}
 		}
-		
+
 		protected function sendCurrentRequest():void
 		{
 			_requestsExecutedThisCyle++;
 			_currentRequest.send();
 		}
-		
+
 		protected function requestCompleted():void
 		{
 			removeListeners( _currentRequest.completedSignal );
@@ -101,25 +109,25 @@ package couk.markstar.starrequests.utils
 			_isExecuting = false;
 			sendNextRequest();
 		}
-		
+
 		/*
-		* Some dirty hacks to get around http://github.com/robertpenner/as3-signals/issues/closed#issue/17
-		*/
+		 * Some dirty hacks to get around http://github.com/robertpenner/as3-signals/issues/closed#issue/17
+		 */
 		protected function requestCompletedListenerNone():void
 		{
 			requestCompleted();
 		}
-		
+
 		protected function requestCompletedListenerOne( paramOne:* ):void
 		{
 			requestCompleted();
 		}
-		
+
 		protected function requestCompletedListenerTwo( paramOne:*, paramTwo:* ):void
 		{
 			requestCompleted();
 		}
-		
+
 		protected function addListeners( signal:ISignal ):void
 		{
 			switch ( signal.valueClasses.length )
@@ -137,7 +145,7 @@ package couk.markstar.starrequests.utils
 					trace( "Could not add listener to a signal in this request, it requires more than 2 parameters" );
 			}
 		}
-		
+
 		protected function removeListeners( signal:ISignal ):void
 		{
 			switch ( signal.valueClasses.length )
