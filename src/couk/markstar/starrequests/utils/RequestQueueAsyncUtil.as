@@ -5,7 +5,7 @@ package couk.markstar.starrequests.utils
 	import flash.utils.setTimeout;
 	
 	import org.osflash.signals.ISignal;
-
+	
 	public final class RequestQueueAsyncUtil
 	{
 		protected var _numRequestsPerCycle:uint;
@@ -17,6 +17,8 @@ package couk.markstar.starrequests.utils
 		protected var _requests:Vector.<IRequest>;
 		protected var _currentRequest:IRequest;
 		
+		protected var _autoStart:Boolean = true;
+		
 		public function RequestQueueAsyncUtil( numRequestsPerCycle:uint, cycleDelay:uint = 100 )
 		{
 			_numRequestsPerCycle = numRequestsPerCycle;
@@ -26,19 +28,38 @@ package couk.markstar.starrequests.utils
 			_requests = new Vector.<IRequest>();
 		}
 		
+		public function get autoStart():Boolean
+		{
+			return _autoStart;
+		}
+		
+		public function set autoStart( value:Boolean ):void
+		{
+			_autoStart = value;
+			
+			if ( !_isExecuting && _requests.length )
+			{
+				sendNextRequest();
+			}
+		}
+		
 		public function addRequest( request:IRequest ):void
 		{
 			addListeners( request.completedSignal );
 			addListeners( request.failedSignal );
 			_requests[ _requests.length ] = request;
-			sendNextRequest();
+			
+			if ( autoStart )
+			{
+				sendNextRequest();
+			}
 		}
 		
 		public function clear():void
 		{
 			var request:IRequest;
 			
-			while( _requests.length )
+			while ( _requests.length )
 			{
 				request = _requests.shift();
 				removeListeners( request.completedSignal );
@@ -49,12 +70,12 @@ package couk.markstar.starrequests.utils
 		
 		protected function sendNextRequest():void
 		{
-			if( !_isExecuting && _requests.length )
+			if ( !_isExecuting && _requests.length )
 			{
 				_isExecuting = true;
 				_currentRequest = _requests.shift();
-		
-				if( _requestsExecutedThisCyle == _numRequestsPerCycle )
+				
+				if ( _requestsExecutedThisCyle == _numRequestsPerCycle )
 				{
 					_requestsExecutedThisCyle = 0;
 					setTimeout( sendCurrentRequest, _cycleDelay );
@@ -101,7 +122,7 @@ package couk.markstar.starrequests.utils
 		
 		protected function addListeners( signal:ISignal ):void
 		{
-			switch( signal.valueClasses.length )
+			switch ( signal.valueClasses.length )
 			{
 				case 0:
 					signal.add( requestCompletedListenerNone );
@@ -119,7 +140,7 @@ package couk.markstar.starrequests.utils
 		
 		protected function removeListeners( signal:ISignal ):void
 		{
-			switch( signal.valueClasses.length )
+			switch ( signal.valueClasses.length )
 			{
 				case 0:
 					signal.remove( requestCompletedListenerNone );
